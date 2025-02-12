@@ -1,6 +1,13 @@
 "use client";
 
-import { Box, Button, MenuItem, Select, Typography, type SelectChangeEvent } from "@mui/material";
+import {
+  Box,
+  Button,
+  MenuItem,
+  Select,
+  Typography,
+  type SelectChangeEvent,
+} from "@mui/material";
 import DragAndDrop from "./drag-and-drop";
 import { useState } from "react";
 import { supportedLanguages, uploadDir } from "@/utils/utils";
@@ -112,7 +119,7 @@ const InputComponent = ({
   const handleLagugageChange = (e: SelectChangeEvent<string>) => {
     setSelectedLanguage(e.target.value as string);
     setAudioFile("");
-  }
+  };
 
   const showLanguage = () => {
     return (
