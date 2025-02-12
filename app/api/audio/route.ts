@@ -1,7 +1,7 @@
 import { outputDir } from "@/utils/utils";
 import { type NextRequest } from "next/server";
 import OpenAI from "openai";
-import { openAIAPIKey } from "@/config/env";
+import { blobKey, openAIAPIKey } from "@/config/env";
 import { put } from "@vercel/blob";
 
 const openai = new OpenAI({
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     // Upload file to Vercel Blob
     const blob = await put(`${outputDir}/${file.name}`, file, {
       access: "public",
+      token: blobKey,
     });
 
     const url = blob.url;

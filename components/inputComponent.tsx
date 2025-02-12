@@ -1,9 +1,11 @@
 "use client";
 
-import { Box, Button, MenuItem, Select, Typography } from "@mui/material";
+import { Box, Button, MenuItem, Select, Typography, type SelectChangeEvent } from "@mui/material";
 import DragAndDrop from "./drag-and-drop";
 import { useState } from "react";
-import { supportedLanguages } from "@/utils/utils";
+import { supportedLanguages, uploadDir } from "@/utils/utils";
+import { put } from "@vercel/blob";
+import { blobKey } from "@/config/env";
 
 interface InputComponentProps {
   transcription: {
@@ -28,16 +30,14 @@ const InputComponent = ({
   const [audioFile, setAudioFile] = useState<string>("");
 
   const uploadFile = async () => {
-    const formData = new FormData();
-    formData.append("file", files[0]);
+    const file = files[0];
     try {
       setLoading(true);
-      const response = await fetch("/api/file", {
-        method: "POST",
-        body: formData,
+      const blob = await put(`${uploadDir}/${file.name}`, file, {
+        access: "public",
+        token: blobKey,
       });
-      const data = await response.json();
-      return data.file;
+      return blob.url;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       setError(`Failed to upload file. ${e.message}`);
@@ -65,7 +65,9 @@ const InputComponent = ({
   const handleGenerateTranscript = async () => {
     if (files.length) {
       const filePath = await uploadFile();
-      await generateScript(filePath);
+      if (filePath) {
+        await generateScript(filePath);
+      }
     }
   };
 
@@ -107,6 +109,11 @@ const InputComponent = ({
     }
   };
 
+  const handleLagugageChange = (e: SelectChangeEvent<string>) => {
+    setSelectedLanguage(e.target.value as string);
+    setAudioFile("");
+  }
+
   const showLanguage = () => {
     return (
       <>
@@ -114,7 +121,7 @@ const InputComponent = ({
           variant={"standard"}
           label="Language"
           value={selectedLanguage}
-          onChange={(e) => setSelectedLanguage(e.target.value)}
+          onChange={handleLagugageChange}
         >
           {supportedLanguages.map((lang) => (
             <MenuItem key={lang.code} value={lang.code}>
@@ -163,7 +170,9 @@ const InputComponent = ({
             onClick={generateTranslation}
             disabled={!transcription.text}
           >
-            {loadingTranslation ? "Translating..." : `Translate to ${selectedLanguage}`}
+            {loadingTranslation
+              ? "Translating..."
+              : `Translate to ${selectedLanguage}`}
           </Button>
         </>
       )}
