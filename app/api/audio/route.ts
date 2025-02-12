@@ -1,25 +1,21 @@
 import { outputDir } from "@/utils/utils";
 import { type NextRequest } from "next/server";
-import fs from "fs";
 import OpenAI from "openai";
 import { openAIAPIKey } from "@/config/env";
-import path from "path";
+import { put } from "@vercel/blob";
 
 const openai = new OpenAI({
   apiKey: openAIAPIKey,
 });
 
-if (!fs.existsSync(outputDir)) {
-  fs.mkdirSync(outputDir, { recursive: true });
-}
 
 export async function POST(req: NextRequest) {
   try {
     const params = req.nextUrl.searchParams;
-    const fileKey = params.get("file");
+    const fileName = params.get("fileName");
 
-    if (!fileKey) {
-      return Response.json({ error: "No file key" }, { status: 400 });
+    if (!fileName) {
+      return Response.json({ error: "No file name" }, { status: 400 });
     }
 
     const { text } = await req.json();
@@ -48,14 +44,17 @@ export async function POST(req: NextRequest) {
     // Combine all MP3 buffers into one file
     const finalAudio = Buffer.concat(audioBuffers);
 
-    // Create a path for the MP3 file
-    const filePath = path.join(outputDir, fileKey);
-    
-    // Write the MP3 file to disk
-    fs.writeFileSync(filePath, finalAudio);
+    const file = new File([finalAudio], `${fileName}-audio.mp3`, { type: "audio/mpeg" });
+
+    // Upload file to Vercel Blob
+    const blob = await put(`${outputDir}/${file.name}`, file, {
+      access: "public",
+    });
+
+    const url = blob.url;
 
     // Return the file URL
-    return Response.json({ fileUrl: `/outputs/${fileKey}`}, { status: 200 });
+    return Response.json({ fileUrl: url}, { status: 200 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error(error);

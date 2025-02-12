@@ -1,8 +1,6 @@
-import path from "path";
+export const uploadDir = "uploads";
 
-export const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-export const outputDir = path.join(process.cwd(), "public", "outputs");
+export const outputDir = "outputs";
 
 export const supportedLanguages = [
   { code: "af", name: "Afrikaans" },
@@ -63,3 +61,10 @@ export const supportedLanguages = [
   { code: "vi", name: "Vietnamese" },
   { code: "cy", name: "Welsh" },
 ];
+
+
+export const fetchFile = async (fileURL: string) => {
+  const response = await fetch(fileURL);
+  const blob = await response.blob();
+  return blob;
+}

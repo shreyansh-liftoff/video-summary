@@ -22,11 +22,10 @@ const InputComponent = ({
 }: InputComponentProps) => {
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string>("");
-  const [filePath, setFilePath] = useState<string>("");
-  const [audioFile, setAudioFile] = useState<string>("");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [loadingAudio, setLoadingAudio] = useState<boolean>(false);
   const [loadingTranslation, setLoadingTranslation] = useState<boolean>(false);
+  const [audioFile, setAudioFile] = useState<string>("");
 
   const uploadFile = async () => {
     const formData = new FormData();
@@ -47,10 +46,10 @@ const InputComponent = ({
     }
   };
 
-  const generateScript = async (filePath: string) => {
+  const generateScript = async (fileURL: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/transcription/?file=${filePath}`, {
+      const response = await fetch(`/api/transcription/?file=${fileURL}`, {
         method: "POST",
       });
       const data = await response.json();
@@ -66,7 +65,6 @@ const InputComponent = ({
   const handleGenerateTranscript = async () => {
     if (files.length) {
       const filePath = await uploadFile();
-      setFilePath(filePath);
       await generateScript(filePath);
     }
   };
@@ -94,8 +92,8 @@ const InputComponent = ({
   const generateAudio = async () => {
     try {
       setLoadingAudio(true);
-      const mp3 = filePath.replace("mp4", "mp3");
-      const response = await fetch(`/api/audio/?file=${mp3}`, {
+      const fileName = files[0].name;
+      const response = await fetch(`/api/audio/?fileName=${fileName}`, {
         method: "POST",
         body: JSON.stringify({ text: transcription.text }),
       });
@@ -163,7 +161,7 @@ const InputComponent = ({
             variant={loadingTranslation ? "outlined" : "contained"}
             color="primary"
             onClick={generateTranslation}
-            disabled={!filePath}
+            disabled={!transcription.text}
           >
             {loadingTranslation ? "Translating..." : `Translate to ${selectedLanguage}`}
           </Button>
@@ -175,7 +173,7 @@ const InputComponent = ({
           variant={loadingAudio ? "outlined" : "contained"}
           color="primary"
           onClick={generateAudio}
-          disabled={!filePath}
+          disabled={!transcription.text}
         >
           {loadingAudio ? "Generating Audio..." : "Generate Audio"}
         </Button>
