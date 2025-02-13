@@ -20,6 +20,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const cookie = req.headers.get("X-Cookie") ?? '';
+
+    if (!cookie) {
+      return new Response(JSON.stringify({ error: "Missing cookies" }), {
+        status: 400,
+      });
+    }
+
     // Extract video ID from URL
     const videoId = ytdl.getURLVideoID(videoUrl);
     const outputPath = path.join(os.tmpdir(), `${videoId}.mp3`);
@@ -28,6 +36,7 @@ export async function POST(req: NextRequest) {
     const audioStream = ytdl(videoUrl, {
       quality: "highestaudio",
       filter: "audioonly",
+        requestOptions: { headers: { cookie } },
     });
     const fileStream = fs.createWriteStream(outputPath);
     // Use pipeline to handle the stream properly

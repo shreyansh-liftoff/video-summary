@@ -3,6 +3,8 @@
 import {
   Box,
   Button,
+  Divider,
+  FormHelperText,
   MenuItem,
   Select,
   TextField,
@@ -36,6 +38,7 @@ const InputComponent = ({
   const [loadingTranslation, setLoadingTranslation] = useState<boolean>(false);
   const [audioFile, setAudioFile] = useState<string>("");
   const [link, setLink] = useState<string>("");
+  const [cookies, setCookie] = useState("");
   const { uploadFileToBlob } = useUploadFile();
 
   const generateScript = async (fileURL: string) => {
@@ -57,10 +60,18 @@ const InputComponent = ({
 
   const processLink = async () => {
     try {
+      if (!cookies) {
+        setError("Please provide cookies to access the content.");
+        return;
+      }
       setError("");
       setLoading(true);
       const response = await fetch(`/api/download/?link=${link}`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Cookie": cookies,
+        },
       });
       const data = await response.json();
       return data.fileUrl;
@@ -175,6 +186,20 @@ const InputComponent = ({
         onChange={(e) => setLink(e.target.value)}
         fullWidth
       />
+      <TextField
+        id="outlined-basic"
+        label="Cookie"
+        variant="outlined"
+        value={cookies}
+        onChange={(e) => setCookie(e.target.value)}
+        fullWidth
+      />
+      <FormHelperText>
+        Note: Youtube requires cookies to access the content.
+      </FormHelperText>
+      <Divider>
+        <Typography variant="body1">OR</Typography>
+      </Divider>
       <Typography variant="body1">
         Upload a file to generate a transcription.
       </Typography>
