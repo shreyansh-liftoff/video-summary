@@ -3,8 +3,7 @@ import fs from "fs";
 import ytdl from "@distube/ytdl-core";
 import { put } from "@vercel/blob";
 import path from "path";
-import { blobKey } from "@/config/env";
-import { pipeline } from "stream/promises";
+import { blobKey, youtubeServerUrl } from "@/config/env";
 import os from "os";
 import { uploadDir } from "@/utils/utils";
 
@@ -20,38 +19,24 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const cookie = req.headers.get("X-Cookie") ?? '';
+    const response = await fetch(`https://${youtubeServerUrl}/download`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoUrl }),
+    });
 
-    if (!cookie) {
-      return new Response(JSON.stringify({ error: "Missing cookies" }), {
-        status: 400,
-      });
-    }
+    if (!response.ok) throw new Error("Download failed");
+
+    const fileBuffer = await response.arrayBuffer();
 
     // Extract video ID from URL
     const videoId = ytdl.getURLVideoID(videoUrl);
     const outputPath = path.join(os.tmpdir(), `${videoId}.mp3`);
 
-    console.log("Downloading audio...");
-    const headers = {
-        Cookie: `VISITOR_INFO1_LIVE=${cookie}`,
-    }
-    const audioStream = ytdl(videoUrl, {
-      quality: "highestaudio",
-      filter: "audioonly",
-        requestOptions: { 
-            headers: headers
-        },
-    });
-    const fileStream = fs.createWriteStream(outputPath);
-    // Use pipeline to handle the stream properly
-    await pipeline(audioStream, fileStream);
-    console.log("Download complete.");
-
     console.log("Uploading to Vercel Blob...");
     const uploadedBlob = await put(
       `${uploadDir}/${videoId}.mp3`,
-      fs.createReadStream(outputPath),
+      Buffer.from(fileBuffer),
       {
         access: "public",
         token: blobKey,

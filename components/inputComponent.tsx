@@ -60,10 +60,7 @@ const InputComponent = ({
 
   const processLink = async () => {
     try {
-      if (!cookies) {
-        setError("Please provide cookies to access the content.");
-        return;
-      }
+      
       setError("");
       setLoading(true);
       const response = await fetch(`/api/download/?link=${link}`, {
