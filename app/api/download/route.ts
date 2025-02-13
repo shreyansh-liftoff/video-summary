@@ -33,10 +33,15 @@ export async function POST(req: NextRequest) {
     const outputPath = path.join(os.tmpdir(), `${videoId}.mp3`);
 
     console.log("Downloading audio...");
+    const headers = {
+        Cookie: `VISITOR_INFO1_LIVE=${cookie}`,
+    }
     const audioStream = ytdl(videoUrl, {
       quality: "highestaudio",
       filter: "audioonly",
-        requestOptions: { headers: { cookie } },
+        requestOptions: { 
+            headers: headers
+        },
     });
     const fileStream = fs.createWriteStream(outputPath);
     // Use pipeline to handle the stream properly
