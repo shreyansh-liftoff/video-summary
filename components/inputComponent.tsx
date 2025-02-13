@@ -5,14 +5,14 @@ import {
   Button,
   MenuItem,
   Select,
+  TextField,
   Typography,
   type SelectChangeEvent,
 } from "@mui/material";
 import DragAndDrop from "./drag-and-drop";
 import { useState } from "react";
-import { supportedLanguages, uploadDir } from "@/utils/utils";
-import { put } from "@vercel/blob";
-import { blobKey } from "@/config/env";
+import { supportedLanguages } from "@/utils/utils";
+import useUploadFile from "@/hooks/useUploadFIle";
 
 interface InputComponentProps {
   transcription: {
@@ -35,26 +35,12 @@ const InputComponent = ({
   const [loadingAudio, setLoadingAudio] = useState<boolean>(false);
   const [loadingTranslation, setLoadingTranslation] = useState<boolean>(false);
   const [audioFile, setAudioFile] = useState<string>("");
-
-  const uploadFile = async () => {
-    const file = files[0];
-    try {
-      setLoading(true);
-      const blob = await put(`${uploadDir}/${file.name}`, file, {
-        access: "public",
-        token: blobKey,
-      });
-      return blob.url;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      setError(`Failed to upload file. ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [link, setLink] = useState<string>("");
+  const { uploadFileToBlob } = useUploadFile();
 
   const generateScript = async (fileURL: string) => {
     try {
+      setError("");
       setLoading(true);
       const response = await fetch(`/api/transcription/?file=${fileURL}`, {
         method: "POST",
@@ -69,17 +55,39 @@ const InputComponent = ({
     }
   };
 
+  const processLink = async () => {
+    try {
+      setError("");
+      setLoading(true);
+      const response = await fetch(`/api/download/?link=${link}`, {
+        method: "POST",
+      });
+      const data = await response.json();
+      return data.fileUrl;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
+      setError(`Failed to generate transcription. ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const handleGenerateTranscript = async () => {
-    if (files.length) {
-      const filePath = await uploadFile();
-      if (filePath) {
-        await generateScript(filePath);
-      }
+    let filePath;
+    if (link) {
+      filePath = await processLink();
+    } 
+    else if (files.length) {
+      filePath = await uploadFileToBlob(files[0]);
+    }
+    if (filePath) {
+      await generateScript(filePath);
     }
   };
 
   const generateTranslation = async () => {
     try {
+      setError("");
       setLoadingTranslation(true);
       const response = await fetch(`/api/translation/`, {
         method: "POST",
@@ -100,8 +108,9 @@ const InputComponent = ({
 
   const generateAudio = async () => {
     try {
+      setError("");
       setLoadingAudio(true);
-      const fileName = files[0].name;
+      const fileName = files?.[0]?.name ?? link;
       const response = await fetch(`/api/audio/?fileName=${fileName}`, {
         method: "POST",
         body: JSON.stringify({ text: transcription.text }),
@@ -154,14 +163,27 @@ const InputComponent = ({
         gap: 2,
       }}
     >
-      <Typography variant="h2">Converter</Typography>
+      <Typography variant="h3">Transcribe and Summarize</Typography>
+      <Typography variant="body1">
+        Copy and paste link to generate a transcription.
+      </Typography>
+      <TextField
+        id="outlined-basic"
+        label="Link"
+        variant="outlined"
+        value={link}
+        onChange={(e) => setLink(e.target.value)}
+        fullWidth
+      />
+      <Typography variant="body1">
+        Upload a file to generate a transcription.
+      </Typography>
       <DragAndDrop callback={(files) => setFiles(files)} />
-
       <Button
         variant={loading ? "outlined" : "contained"}
         color="primary"
         onClick={handleGenerateTranscript}
-        disabled={!files.length}
+        disabled={(!link && !files.length) || loading}
       >
         {loading ? "Summarizing..." : "Summarize"}
       </Button>

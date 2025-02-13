@@ -44,7 +44,12 @@ export async function POST(req: NextRequest) {
     // Combine all MP3 buffers into one file
     const finalAudio = Buffer.concat(audioBuffers);
 
-    const file = new File([finalAudio], `${fileName}-audio.mp3`, { type: "audio/mpeg" });
+     // Sanitize file name by removing special characters and spaces
+     const sanitizedFileName = fileName
+     .replace(/[^a-zA-Z0-9-]/g, '-')
+     .toLowerCase();
+
+    const file = new File([finalAudio], `${sanitizedFileName}-audio.mp3`, { type: "audio/mpeg" });
 
     // Upload file to Vercel Blob
     const blob = await put(`${outputDir}/${file.name}`, file, {
