@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const response = await fetch(`https://${youtubeServerUrl}/download`, {
+    const response = await fetch(`${youtubeServerUrl}/download`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ videoUrl }),

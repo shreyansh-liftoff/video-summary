@@ -8,6 +8,7 @@ interface TrancriptionProps {
 }
 
 const Trancription = ({transcription, loading}: TrancriptionProps) => {
+    console.log(transcription);
     return (
         <Box sx={{
             margin: 2,
